@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Search, Plus, Upload, Moon, Sun, Menu,
   Trash2, Edit2, Loader2, Cloud, CheckCircle2, AlertCircle,
-  Pin, Settings, Lock, CloudCog, Github, GitFork, GripVertical, Save, CheckSquare, LogOut, ExternalLink, X
+  Pin, Settings, Lock, CloudCog, Github, GitFork, GripVertical, Save, CheckSquare, LogOut, ExternalLink, X, ChevronRight
 } from 'lucide-react';
 import {
   DndContext,
@@ -158,6 +158,38 @@ function App() {
 
   // Mobile Search State
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+
+  // Collapsed Categories State
+  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('collapsed_categories');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
+  const toggleCategoryCollapse = (catId: string) => {
+    setCollapsedCategoryIds(prev => {
+      const next = new Set(prev);
+      if (next.has(catId)) next.delete(catId);
+      else next.add(catId);
+      localStorage.setItem('collapsed_categories', JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  // Collapsed Categories State
+  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('collapsed_categories');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
+  const toggleCategoryCollapse = (catId: string) => {
+    setCollapsedCategoryIds(prev => {
+      const next = new Set(prev);
+      if (next.has(catId)) next.delete(catId);
+      else next.add(catId);
+      localStorage.setItem('collapsed_categories', JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   // Category Action Auth State
   const [categoryActionAuth, setCategoryActionAuth] = useState<{
@@ -2174,7 +2206,7 @@ function App() {
                   title="Fork this project on GitHub"
                 >
                   <GitFork size={14} />
-                  <span>Fork 项目 v2.0.0</span>
+                  <span>Fork 项目 v2.0.1</span>
                 </a>
               </div>
             </div>
@@ -2504,6 +2536,16 @@ function App() {
                       <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-20">
                         <div className="flex items-center justify-between mb-4 border-b border-slate-200 dark:border-slate-700 pb-2">
                           <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => toggleCategoryCollapse(cat.id)}
+                              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-all text-slate-400"
+                              title={collapsedCategoryIds.has(cat.id) ? "展开" : "折叠"}
+                            >
+                              <ChevronRight
+                                size={16}
+                                className={`transition-transform duration-200 ${collapsedCategoryIds.has(cat.id) ? '' : 'rotate-90'}`}
+                              />
+                            </button>
                             <Icon name={cat.icon} size={18} className="text-blue-500" />
                             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                               {cat.name}
@@ -2513,15 +2555,17 @@ function App() {
                               {catLinks.length}
                             </span>
                           </div>
-                          <button
-                            onClick={() => setSelectedCategory(cat.id)}
-                            className="text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors"
-                          >
-                            显示全部 →
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setSelectedCategory(cat.id)}
+                              className="text-xs text-blue-500 hover:text-blue-600 font-medium transition-colors"
+                            >
+                              显示全部 →
+                            </button>
+                          </div>
                         </div>
 
-                        {isLocked ? (
+                        {collapsedCategoryIds.has(cat.id) ? null : (isLocked ? (
                           <div className="flex flex-col items-center justify-center py-10 text-slate-400 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
                             <Lock size={32} className="text-amber-400 mb-3" />
                             <p className="text-sm">该目录已锁定</p>
@@ -2537,9 +2581,13 @@ function App() {
                             ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
                             : 'grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8'
                             }`}>
-                            {catLinks.sort((a, b) => (b.order || b.createdAt) - (a.order || a.createdAt)).map(link => renderLinkCard(link))}
+                            {catLinks.sort((a, b) => {
+                              const aOrder = a.order !== undefined ? a.order : a.createdAt;
+                              const bOrder = b.order !== undefined ? b.order : b.createdAt;
+                              return aOrder - bOrder;
+                            }).map(link => renderLinkCard(link))}
                           </div>
-                        )}
+                        ))}
                       </section>
                     );
                   })}
