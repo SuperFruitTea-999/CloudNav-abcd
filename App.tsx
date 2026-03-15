@@ -175,22 +175,6 @@ function App() {
     });
   };
 
-  // Collapsed Categories State
-  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('collapsed_categories');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-
-  const toggleCategoryCollapse = (catId: string) => {
-    setCollapsedCategoryIds(prev => {
-      const next = new Set(prev);
-      if (next.has(catId)) next.delete(catId);
-      else next.add(catId);
-      localStorage.setItem('collapsed_categories', JSON.stringify([...next]));
-      return next;
-    });
-  };
-
   // Category Action Auth State
   const [categoryActionAuth, setCategoryActionAuth] = useState<{
     isOpen: boolean;
