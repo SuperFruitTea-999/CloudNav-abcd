@@ -1731,7 +1731,7 @@ function App() {
     result = result.filter(l => !isCategoryLocked(l.categoryId));
 
     // Search Filter
-    if (searchQuery.trim()) {
+    if (searchQuery.trim() && searchMode === 'internal') {
       const q = searchQuery.toLowerCase();
       result = result.filter(l =>
         l.title.toLowerCase().includes(q) ||
@@ -1758,7 +1758,7 @@ function App() {
 
   // 计算其他目录的搜索结果
   const otherCategoryResults = useMemo(() => {
-    if (!searchQuery.trim() || selectedCategory === 'all') {
+    if (!searchQuery.trim() || selectedCategory === 'all' || searchMode !== 'internal') {
       return [];
     }
 
@@ -1886,15 +1886,15 @@ function App() {
           ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'
           : 'bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-slate-200 dark:border-slate-700'
           } ${isBatchEditMode ? 'cursor-pointer' : ''} ${isDetailedView
-            ? 'flex flex-col rounded-2xl border shadow-sm p-4 min-h-[100px] hover:border-blue-400 dark:hover:border-blue-500'
-            : 'flex items-center justify-between rounded-xl border shadow-sm p-3 hover:border-blue-300 dark:hover:border-blue-600'
+            ? 'flex flex-col rounded-2xl border shadow-sm min-h-[100px] hover:border-blue-400 dark:hover:border-blue-500'
+            : 'flex items-center justify-between rounded-xl border shadow-sm hover:border-blue-300 dark:hover:border-blue-600'
           }`}
         onClick={() => isBatchEditMode && toggleLinkSelection(link.id)}
         onContextMenu={(e) => handleContextMenu(e, link)}
       >
         {/* 链接内容 - 在批量编辑模式下不使用a标签 */}
         {isBatchEditMode ? (
-          <div className={`flex flex-1 min-w-0 overflow-hidden h-full ${isDetailedView ? 'flex-col' : 'items-center'
+          <div className={`flex flex-1 min-w-0 overflow-hidden h-full ${isDetailedView ? 'flex-col p-4' : 'items-center p-3'
             }`}>
             {/* 第一行：图标和标题水平排列 */}
             <div className={`flex items-center gap-3 w-full`}>
@@ -1913,7 +1913,7 @@ function App() {
 
             {/* 第二行：描述文字 */}
             {isDetailedView && link.description && (
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2">
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2 mt-2">
                 {link.description}
               </p>
             )}
@@ -1923,7 +1923,7 @@ function App() {
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`flex flex-1 min-w-0 overflow-hidden h-full ${isDetailedView ? 'flex-col' : 'items-center'
+            className={`flex flex-1 min-w-0 overflow-hidden h-full ${isDetailedView ? 'flex-col p-4' : 'items-center p-3'
               }`}
             title={isDetailedView ? link.url : (link.description || link.url)} // 详情版视图只显示URL作为tooltip
           >
@@ -1944,7 +1944,7 @@ function App() {
 
             {/* 第二行：描述文字 */}
             {isDetailedView && link.description && (
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2">
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2 mt-2">
                 {link.description}
               </p>
             )}
@@ -2519,23 +2519,23 @@ function App() {
                     return (
                       <section key={cat.id} id={`category-${cat.id}`} className="scroll-mt-20">
                         <div className="flex items-center justify-between mb-4 border-b border-slate-200 dark:border-slate-700 pb-2">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => toggleCategoryCollapse(cat.id)}
-                              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-all text-slate-400"
-                              title={collapsedCategoryIds.has(cat.id) ? "展开" : "折叠"}
-                            >
+                          <div
+                            className="flex items-center gap-2 cursor-pointer group/cat-header"
+                            onClick={() => toggleCategoryCollapse(cat.id)}
+                            title={collapsedCategoryIds.has(cat.id) ? "展开" : "折叠"}
+                          >
+                            <div className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-all text-slate-400 group-hover/cat-header:text-blue-500">
                               <ChevronRight
                                 size={16}
                                 className={`transition-transform duration-200 ${collapsedCategoryIds.has(cat.id) ? '' : 'rotate-90'}`}
                               />
-                            </button>
+                            </div>
                             <Icon name={cat.icon} size={18} className="text-blue-500" />
-                            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 group-hover/cat-header:text-blue-600 dark:group-hover/cat-header:text-blue-400">
                               {cat.name}
                             </h2>
                             {isLocked && <Lock size={14} className="text-amber-500" />}
-                            <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full">
+                            <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full group-hover/cat-header:bg-blue-100 dark:group-hover/cat-header:bg-blue-900/50">
                               {catLinks.length}
                             </span>
                           </div>
