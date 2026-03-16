@@ -2433,7 +2433,7 @@ function App() {
             <div className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-8">
 
               {/* 1. Pinned Area (Custom Top Area) */}
-              {pinnedLinks.length > 0 && !searchQuery && (selectedCategory === 'all') && (
+              {pinnedLinks.length > 0 && (!searchQuery || searchMode === 'external') && (selectedCategory === 'all') && (
                 <section>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -2506,7 +2506,7 @@ function App() {
               )}
 
               {/* 2. Main Grid / Infinite Scroll Area */}
-              {(!searchQuery && selectedCategory === 'all') ? (
+              {((!searchQuery || searchMode === 'external') && selectedCategory === 'all') ? (
                 // 首页无限下拉模式：渲染所有分类
                 <div className="space-y-12">
                   {categories.map(cat => {
@@ -2594,7 +2594,7 @@ function App() {
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
                       {selectedCategory === 'all'
-                        ? (searchQuery ? '搜索结果' : '所有链接')
+                        ? ((searchQuery && searchMode === 'internal') ? '搜索结果' : '所有链接')
                         : (
                           <>
                             {categories.find(c => c.id === selectedCategory)?.name}
@@ -2743,7 +2743,7 @@ function App() {
               )}
 
               {/* 其他目录搜索结果区域 */}
-              {searchQuery.trim() && selectedCategory !== 'all' && (
+              {searchMode === 'internal' && searchQuery.trim() && selectedCategory !== 'all' && (
                 <section className="mt-8 pt-8 border-t-2 border-slate-200 dark:border-slate-700">
                   <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2 mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-folder-search">
