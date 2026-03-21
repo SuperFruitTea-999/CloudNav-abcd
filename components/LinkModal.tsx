@@ -139,7 +139,7 @@ const LinkModal: React.FC<LinkModalProps> = ({ isOpen, onClose, onSave, onDelete
     });
     
     // 如果有自定义图标URL，缓存到KV空间
-    if (icon && !icon.includes('faviconextractor.com')) {
+    if (icon && !icon.includes('/api/icon')) {
       cacheCustomIcon(finalUrl, icon);
     }
     
@@ -204,47 +204,14 @@ const LinkModal: React.FC<LinkModalProps> = ({ isOpen, onClose, onSave, onDelete
         domain = urlObj.hostname;
       }
       
-      // 先尝试从KV缓存获取图标
-      try {
-        const response = await fetch(`/api/storage?getConfig=favicon&domain=${encodeURIComponent(domain)}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.cached && data.icon) {
-            setIcon(data.icon);
-            setIsFetchingIcon(false);
-            return;
-          }
-        }
-      } catch (error) {
-        console.log("Failed to fetch cached icon, will generate new one", error);
-      }
-      
-      // 如果缓存中没有，则生成新图标
-      const iconUrl = `https://www.faviconextractor.com/favicon/${domain}?larger=true`;
+      const iconUrl = `/api/icon?domain=${domain}`;
       setIcon(iconUrl);
       
-      // 将图标保存到KV缓存
-      try {
-        const authToken = localStorage.getItem('authToken');
-        if (authToken) {
-          await fetch('/api/storage', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-auth-password': authToken
-            },
-            body: JSON.stringify({
-              saveConfig: 'favicon',
-              domain: domain,
-              icon: iconUrl
-            })
-          });
-        }
-      } catch (error) {
-        console.log("Failed to cache icon", error);
-      }
+      // 触发无声获取来预热后端的KV缓存
+      fetch(iconUrl).catch(() => {});
+      
     } catch (e) {
-      console.error("Failed to fetch icon", e);
+      console.error("Failed to parse URL for icon", e);
       alert("无法获取图标，请检查URL是否正确");
     } finally {
       setIsFetchingIcon(false);

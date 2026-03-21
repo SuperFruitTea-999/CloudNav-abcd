@@ -388,88 +388,7 @@ function App() {
     closeContextMenu();
   };
 
-  // 加载链接图标缓存
-  const loadLinkIcons = async (linksToLoad: LinkItem[]) => {
-    if (!authToken) return; // 只有在已登录状态下才加载图标缓存
 
-    const updatedLinks = [...linksToLoad];
-    const domainsToFetch: string[] = [];
-
-    // 收集所有链接的域名（包括已有图标的链接）
-    for (const link of updatedLinks) {
-      if (link.url) {
-        try {
-          let domain = link.url;
-          if (!link.url.startsWith('http://') && !link.url.startsWith('https://')) {
-            domain = 'https://' + link.url;
-          }
-
-          if (domain.startsWith('http://') || domain.startsWith('https://')) {
-            const urlObj = new URL(domain);
-            domain = urlObj.hostname;
-            domainsToFetch.push(domain);
-          }
-        } catch (e) {
-          console.error("Failed to parse URL for icon loading", e);
-        }
-      }
-    }
-
-    // 批量获取图标
-    if (domainsToFetch.length > 0) {
-      const iconPromises = domainsToFetch.map(async (domain) => {
-        try {
-          const response = await fetch(`/api/storage?getConfig=favicon&domain=${encodeURIComponent(domain)}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.cached && data.icon) {
-              return { domain, icon: data.icon };
-            }
-          }
-        } catch (error) {
-          console.log(`Failed to fetch cached icon for ${domain}`, error);
-        }
-        return null;
-      });
-
-      const iconResults = await Promise.all(iconPromises);
-
-      // 更新链接的图标
-      iconResults.forEach(result => {
-        if (result) {
-          const linkToUpdate = updatedLinks.find(link => {
-            if (!link.url) return false;
-            try {
-              let domain = link.url;
-              if (!link.url.startsWith('http://') && !link.url.startsWith('https://')) {
-                domain = 'https://' + link.url;
-              }
-
-              if (domain.startsWith('http://') || domain.startsWith('https://')) {
-                const urlObj = new URL(domain);
-                return urlObj.hostname === result.domain;
-              }
-            } catch (e) {
-              return false;
-            }
-            return false;
-          });
-
-          if (linkToUpdate) {
-            // 只有当链接没有图标，或者当前图标是faviconextractor.com生成的，或者缓存中的图标是自定义图标时才更新
-            if (!linkToUpdate.icon ||
-              linkToUpdate.icon.includes('faviconextractor.com') ||
-              !result.icon.includes('faviconextractor.com')) {
-              linkToUpdate.icon = result.icon;
-            }
-          }
-        }
-      });
-
-      // 更新状态
-      setLinks(updatedLinks);
-    }
-  };
 
   // --- Effects ---
 
@@ -564,8 +483,7 @@ function App() {
             setCategories(data.categories || DEFAULT_CATEGORIES);
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
 
-            // 加载链接图标缓存
-            loadLinkIcons(data.links);
+
             hasCloudData = true;
           }
         } else if (res.status === 401) {
@@ -892,16 +810,14 @@ function App() {
               setCategories(data.categories || DEFAULT_CATEGORIES);
               localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
 
-              // 加载链接图标缓存
-              loadLinkIcons(data.links);
+
             } else {
               // 如果服务器没有数据，使用本地数据
               localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ links, categories }));
               // 并将本地数据同步到服务器
               syncToCloud(links, categories, password);
 
-              // 加载链接图标缓存
-              loadLinkIcons(links);
+
             }
           }
         } catch (e) {
@@ -1852,7 +1768,13 @@ function App() {
             {/* Icon */}
             <div className={`text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold uppercase shrink-0 ${isDetailedView ? 'w-8 h-8 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800' : 'w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-700'
               }`}>
-              {link.icon ? <img src={link.icon} alt="" className="w-5 h-5" /> : link.title.charAt(0)}
+              {link.icon || link.url ? <img src={(()=>{
+                if (link.icon && link.icon.startsWith('data:')) return link.icon;
+                try {
+                  const url = link.url.startsWith('http') ? link.url : 'https://' + link.url;
+                  return `/api/icon?domain=${new URL(url).hostname}`;
+                } catch(e) { return link.icon; }
+              })()} alt="" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : link.title.charAt(0)}
             </div>
 
             {/* 标题 */}
@@ -1901,7 +1823,13 @@ function App() {
               {/* Icon */}
               <div className={`text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold uppercase shrink-0 ${isDetailedView ? 'w-8 h-8 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800' : 'w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-700'
                 }`}>
-                {link.icon ? <img src={link.icon} alt="" className="w-5 h-5" /> : link.title.charAt(0)}
+                {link.icon || link.url ? <img src={(()=>{
+                  if (link.icon && link.icon.startsWith('data:')) return link.icon;
+                  try {
+                    const url = link.url.startsWith('http') ? link.url : 'https://' + link.url;
+                    return `/api/icon?domain=${new URL(url).hostname}`;
+                  } catch(e) { return link.icon; }
+                })()} alt="" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : link.title.charAt(0)}
               </div>
 
               {/* 标题 */}
@@ -1932,7 +1860,13 @@ function App() {
               {/* Icon */}
               <div className={`text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-bold uppercase shrink-0 ${isDetailedView ? 'w-8 h-8 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800' : 'w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-700'
                 }`}>
-                {link.icon ? <img src={link.icon} alt="" className="w-5 h-5" /> : link.title.charAt(0)}
+                {link.icon || link.url ? <img src={(()=>{
+                  if (link.icon && link.icon.startsWith('data:')) return link.icon;
+                  try {
+                    const url = link.url.startsWith('http') ? link.url : 'https://' + link.url;
+                    return `/api/icon?domain=${new URL(url).hostname}`;
+                  } catch(e) { return link.icon; }
+                })()} alt="" className="w-5 h-5" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> : link.title.charAt(0)}
               </div>
 
               {/* 标题 */}
@@ -2190,7 +2124,7 @@ function App() {
                   title="Fork this project on GitHub"
                 >
                   <GitFork size={14} />
-                  <span>Fork 项目 v2.0.1</span>
+                  <span>Fork 项目 v2.0.2</span>
                 </a>
               </div>
             </div>
@@ -2281,7 +2215,7 @@ function App() {
                                 className="px-2 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 flex items-center gap-1 justify-center"
                               >
                                 <img
-                                  src={`https://www.faviconextractor.com/favicon/${new URL(source.url).hostname}?larger=true`}
+                                  src={`/api/icon?domain=${new URL(source.url).hostname}`}
                                   alt={source.name}
                                   className="w-4 h-4"
                                   onError={(e) => {
@@ -2315,7 +2249,7 @@ function App() {
                         </svg>
                       ) : (hoveredSearchSource || selectedSearchSource) ? (
                         <img
-                          src={`https://www.faviconextractor.com/favicon/${new URL((hoveredSearchSource || selectedSearchSource).url).hostname}?larger=true`}
+                          src={`/api/icon?domain=${new URL((hoveredSearchSource || selectedSearchSource).url).hostname}`}
                           alt={(hoveredSearchSource || selectedSearchSource).name}
                           className="w-4 h-4"
                           onError={(e) => {
